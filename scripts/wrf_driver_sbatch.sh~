@@ -1,0 +1,42 @@
+#!/bin/bash
+ 
+#SBATCH --job-name=wrf_3km
+#SBATCH --ntasks=4
+#SBATCH --cpus-per-task=20
+#SBATCH --partition g
+#SBATCH --time=6:00:00
+#SBATCH --mem-per-cpu=4000
+#SBATCH --mail-type=BEGIN
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-type=END
+#SBATCH --mail-user=snesbitt@illinois.edu
+ 
+now=$(date +"%T")
+echo "Start time : $now"
+
+module load intel/intel-14.0.3
+module load intel/netcdf4-4.2-intel-14.0.3
+module load intel/openmpi-1.6.4a-intel-14.0.3
+
+python wrf_realtime_batch.py 2016120712 36 1
+
+cd /data/meso/a/snesbitt/wrf38/WRFV3/test/em_sa
+
+export OMP_NUM_THREADS=20
+
+#mpirun -n 1 ./real.exe
+mpirun -n 4 -genv I_MPI_PIN_DOMAIN -genv KMP_AFFINITY=compact ./wrf.exe
+
+#ln -sf wrfout* wrfprd
+
+#cd postprd
+# Start as many background serial jobs as there are cores available on the node:
+#for i in $(seq 0 36) ; do
+#  ./run_unipost_f$(printf "%02d" $i)
+#  sleep 5
+#done
+#wait
+# for completion of background tasks
+
+#now=$(date +"%T")
+#echo "End time : $now"
